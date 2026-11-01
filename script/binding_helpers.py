@@ -27,8 +27,8 @@ def simulate_thickness_traces(
     protein_diameter_nm: float,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    p_on = min(kon * concentration * dt, 1.0)
-    p_off = min(koff * dt, 1.0)
+    p_on = kon * concentration * dt
+    p_off = koff * dt
     occupied = np.zeros(n_realizations, dtype=np.int32)
     output_lookup = {int(t): i for i, t in enumerate(output_time_s)}
     thickness = np.zeros((n_realizations, len(output_time_s)), dtype=np.float32)

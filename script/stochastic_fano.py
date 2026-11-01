@@ -18,6 +18,7 @@ def load_stochastic_fano(fano_dir: Path, wavelength_stride: int) -> dict:
     wavelengths = pd.read_csv(
         fano_dir / "fano_forward_model_clean_spectrum_matrix.csv", usecols=["wavelengthNm"]
     )["wavelengthNm"].to_numpy(dtype=float)[::wavelength_stride]
+    # V = [1, h, h^2]; coefficients = argmin_B ||V @ B - P||_F^2
     coefficients = np.polynomial.polynomial.polyfit(grid, values, 2)
     return dict(wavelength_nm=wavelengths, thickness_nm=grid, parameters=values,
                 coefficients=coefficients, parameter_noise_std=std)
@@ -27,6 +28,7 @@ def sample_parameters(thickness: np.ndarray, fano: dict, rng: np.random.Generato
     thickness = np.asarray(thickness, dtype=float)
     grid = fano["thickness_nm"]
     clipped = np.clip(thickness, grid[0], grid[-1])
+    # P_ntk = sum_j coefficients_jk * h_nt^j
     params = np.moveaxis(np.polynomial.polynomial.polyval(clipped, fano["coefficients"]), 0, -1)
     params[..., :4] += rng.normal(size=(*thickness.shape, 4)) * fano["parameter_noise_std"]
     params[..., 1] = np.maximum(params[..., 1], np.finfo(float).eps)
@@ -37,8 +39,10 @@ def sample_parameters(thickness: np.ndarray, fano: dict, rng: np.random.Generato
 def sample_spectral_images(thickness: np.ndarray, fano: dict, rng: np.random.Generator) -> np.ndarray:
     params = sample_parameters(thickness, fano, rng)
     centre, gamma, q, amplitude, offset = [params[..., i, None] for i in range(5)]
+    # epsilon_ntw = (wavelength_w - centre_nt) / gamma_nt
     epsilon = (fano["wavelength_nm"] - centre) / gamma
     spectra = offset - amplitude * (q + epsilon) ** 2 / ((1 + q ** 2) * (1 + epsilon ** 2))
+    # Y_nwt = S_ntw
     return spectra.transpose(0, 2, 1).astype(np.float32)
 
 

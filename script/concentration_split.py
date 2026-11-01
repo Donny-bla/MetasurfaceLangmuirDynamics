@@ -12,10 +12,10 @@ class SplitIndices:
 
 def grouped_concentration_split(metadata: pd.DataFrame, args: argparse.Namespace) -> SplitIndices:
     groups = metadata["concentrationIndex"].drop_duplicates().to_numpy(copy=True)
-    rng = np.random.default_rng(args.split_seed)
+    rng = np.random.default_rng()
     rng.shuffle(groups)
-    n_test = max(1, int(round(len(groups) * args.test_fraction)))
-    n_val = max(1, int(round(len(groups) * args.val_fraction)))
+    n_test = int(round(len(groups) * args.test_fraction))
+    n_val = int(round(len(groups) * args.val_fraction))
     test_groups = set(groups[:n_test])
     val_groups = set(groups[n_test:n_test + n_val])
     group_values = metadata["concentrationIndex"].to_numpy()
